@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Simulación en ejecución</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#eef3f8;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+padding:15px;
+background:white;
+}
+
+.container{
+padding:20px;
+}
+
+.cards{
+display:flex;
+gap:20px;
+}
+
+.card{
+flex:1;
+background:white;
+padding:20px;
+border-radius:15px;
+}
+
+.big{
+font-size:28px;
+}
+
+.alerta{
+margin-top:20px;
+background:#e0f2fe;
+padding:15px;
+border-radius:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.btn{
+padding:10px 20px;
+border:none;
+border-radius:10px;
+color:white;
+cursor:pointer;
+}
+
+.pause{
+background:#f59e0b;
+}
+
+.stop{
+background:#ef4444;
+}
+
+.estado{
+margin-top:20px;
+background:white;
+padding:15px;
+border-radius:15px;
+display:flex;
+gap:10px;
+}
+
+.estado div{
+flex:1;
+background:#f1f5f9;
+padding:10px;
+border-radius:10px;
+}
+
+.eval{
+margin-top:20px;
+background:white;
+padding:20px;
+border-radius:15px;
+}
+
+.categoria{
+background:#dbeafe;
+padding:12px;
+border-radius:10px;
+margin-top:20px;
+margin-bottom:15px;
+color:#1d4ed8;
+font-weight:bold;
+}
+
+.item{
+display:flex;
+align-items:center;
+gap:15px;
+background:#f8fafc;
+padding:12px;
+border-radius:10px;
+margin-bottom:10px;
+}
+
+.item-texto{
+flex:1;
+}
+
+.estado-opciones{
+display:flex;
+gap:15px;
+}
+
+.estado-opciones label{
+display:flex;
+align-items:center;
+gap:5px;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+
+<b>Simulación Clínica</b>
+
+<div class="estado-conexion" id="estadoConexion">
+🔴 Desconectado
+</div>
+
+</div>
+
+<div class="container">
+
+<!-- TARJETAS -->
+<div class="cards">
+
+<div class="card">
+Tiempo restante<br>
+<div class="big" id="tiempo">00:00</div>
+</div>
+
+<div class="card">
+Temperatura<br>
+<div class="big" id="tempActual">--.-°C</div>
+</div>
+
+<div class="card">
+Potencia<br>
+<div class="big" id="potenciaActual">30%</div>
+</div>
+
+</div>
+
+<!-- ALERTA -->
+<div class="alerta">
+
+<div>
+Ejecute el protocolo clínico utilizando el panel físico del equipo
+</div>
+
+<div>
+
+<button id="btnPausa"
+class="btn pause"
+onclick="pausar()">
+Pausar
+</button>
+
+<button class="btn stop"
+onclick="finalizar()">
+Finalizar
+</button>
+
+</div>
+
+</div>
+
+<!-- ESTADO -->
+<div class="estado">
+
+<div>
+Modo:
+<b id="modoActual">Prewarm</b>
+</div>
+
+<div>
+Alarma:
+<b id="estadoAlarma">Inactiva</b>
+</div>
+
+<div>
+Objetivo:
+<b id="objetivoActual">36.5°C</b>
+</div>
+
+<div>
+Diferencia:
+<b id="diferenciaActual">--.-°C</b>
+</div>
+
+</div>
+
+<!-- CHECKLIST -->
+<div class="eval">
+
+<h3>Checklist de evaluación clínica</h3>
+
+<div id="opciones"></div>
+
+</div>
+
+</div>
+
+<!-- ================================================= -->
+<!-- CONEXION -->
+<!-- ================================================= -->
+
+<script src="conexion.js"></script>
+
+<script>
+
+// =====================================================
+// CONEXION ESP32
+// =====================================================
+
+conectarESP32();
+
+// =====================================================
+// VARIABLES
+// =====================================================
+
+let modoActual = "PREWARM";
+
+let accionesTecnicas = [];
+
+let alarmaActiva = false;
+
+let bloqueo = false;
+
+let timerActivo = false;
+
+let apgarActivo = false;
+
+// =====================================================
+// ESTADO CONEXION
+// =====================================================
+
+function actualizarEstado(estado){
+
+let el =
+document.getElementById("estadoConexion");
+
+if(!el) return;
+
+if(estado){
+
+el.innerHTML =
+"🟢 Conectado";
+
+el.style.color = "green";
+}
+
+else{
+
+el.innerHTML =
+"🔴 Desconectado";
+
+el.style.color = "red";
+}
+}
+
+// =====================================================
+// EVENTOS DESDE ESP32
+// =====================================================
+
+function manejarEvento(data){
+
+accionesTecnicas.push(data);
+
+console.log("ESP32:",data);
+
+// =====================================================
+// TIMER NUEVO
+// =====================================================
+
+if(data == "TIMER_START"){
+
+timerActivo = true;
+
+document.getElementById("estadoAlarma")
+.innerText =
+"Temporizador activo";
+}
+
+if(data == "TIMER_STOP"){
+
+timerActivo = false;
+
+document.getElementById("estadoAlarma")
+.innerText =
+"Inactiva";
+}
+
+// =====================================================
+// APGAR NUEVO
+// =====================================================
+
+if(data == "APGAR_START"){
+
+apgarActivo = true;
+
+document.getElementById("estadoAlarma")
+.innerText =
+"APGAR activo";
+}
+
+if(data == "APGAR_STOP"){
+
+apgarActivo = false;
+
+document.getElementById("estadoAlarma")
+.innerText =
+"Inactiva";
+}
+
+if(data == "APGAR_1"){
+
+document.getElementById("estadoAlarma")
+.innerText =
+"APGAR 1 minuto";
+}
+
+if(data == "APGAR_5"){
+
+document.getElementById("estadoAlarma")
+.innerText =
+"APGAR 5 minutos";
+}
+
+if(data == "APGAR_10"){
+
+document.getElementById("estadoAlarma")
+.innerText =
+"APGAR 10 minutos";
+}
+
+// =====================================================
+// SILENCIO
+// =====================================================
+
+if(data == "SILENCED"){
+
+document.getElementById("estadoAlarma")
+.innerText =
+"Silenciada";
+}
+
+if(data == "RESET_ALARM"){
+
+document.getElementById("estadoAlarma")
+.innerText =
+"Inactiva";
+}
+
+// =====================================================
+// CANCELAR
+// =====================================================
+
+if(data == "CANCEL_ALL"){
+
+modoActual = "PREWARM";
+
+document.getElementById("modoActual")
+.innerText =
+"Prewarm";
+
+document.getElementById("estadoAlarma")
+.innerText =
+"Inactiva";
+
+document.getElementById("potenciaActual")
+.innerText =
+"30%";
+
+document.getElementById("tempActual")
+.innerText =
+"--.-°C";
+
+document.getElementById("diferenciaActual")
+.innerText =
+"--.-°C";
+}
+
+// =============================================
+// MODOS
+// =============================================
+
+if(data === "precalentamiento"){
+
+modoActual = "PREWARM";
+
+document.getElementById("modoActual").innerText =
+"Prewarm";
+}
+
+if(data === "manual"){
+
+modoActual = "MANUAL";
+
+document.getElementById("modoActual").innerText =
+"Manual";
+}
+
+if(data === "bebe"){
+
+modoActual = "BABY";
+
+document.getElementById("modoActual").innerText =
+"Bebé";
+
+document.getElementById("tempActual").innerText =
+"--.-°C";
+}
+
+// =============================================
+// TEMPERATURA
+// =============================================
+
+if(data.startsWith("BABYTEMP:")){
+
+let temp =
+parseFloat(data.split(":")[1]);
+
+document.getElementById("tempActual").innerText =
+temp.toFixed(1) + "°C";
+
+let objetivo =
+parseFloat(
+document.getElementById("objetivoActual")
+.innerText
+.replace("°C","")
+);
+
+let diferencia =
+(temp - objetivo).toFixed(1);
+
+document.getElementById("diferenciaActual").innerText =
+diferencia + "°C";
+}
+
+// =============================================
+// POTENCIA
+// =============================================
+
+if(data.startsWith("POWER:")){
+
+let p =
+data.split(":")[1];
+
+document.getElementById("potenciaActual").innerText =
+p + "%";
+}
+
+// =============================================
+// SET TEMP
+// =============================================
+
+if(data.startsWith("SETTEMP:")){
+
+let s =
+data.split(":")[1];
+
+document.getElementById("objetivoActual").innerText =
+s + "°C";
+}
+
+// =============================================
+// BLOQUEO
+// =============================================
+
+if(data === "bloqueo"){
+
+bloqueo = !bloqueo;
+
+document.getElementById("estadoAlarma")
+.innerText =
+bloqueo
+?
+"Teclado bloqueado"
+:
+"Inactiva";
+}
+
+// =============================================
+// SILENCIO ANTIGUO
+// =============================================
+
+if(data === "silencio"){
+
+document.getElementById("estadoAlarma").innerText =
+"Silenciada";
+}
+
+// =============================================
+// CANCELAR ANTIGUO
+// =============================================
+
+if(data === "cancelar"){
+
+document.getElementById("estadoAlarma").innerText =
+"Inactiva";
+}
+
+}
+
+// 🔹 DATOS CASO
+
+let caso =
+localStorage.getItem("caso") || 1;
+
+let tiempo =
+localStorage.getItem("tiempo") || 20;
+
+let segundos = tiempo * 60;
+
+let corriendo = true;
+
+// ⏱ TEMPORIZADOR
+
+setInterval(()=>{
+
+if(!corriendo) return;
+
+let min = Math.floor(segundos/60);
+
+let sec = segundos % 60;
+
+document.getElementById("tiempo").innerText =
+String(min).padStart(2,"0")
++ ":"
++ String(sec).padStart(2,"0");
+
+segundos--;
+
+if(segundos < 0){
+
+finalizar();
+}
+
+},1000);
+
+// ⏸ PAUSAR
+
+function pausar(){
+
+corriendo = !corriendo;
+
+document.getElementById("btnPausa").innerText =
+corriendo
+?
+"Pausar"
+:
+"Reanudar";
+}
+
+// 🔹 CHECKLIST GENERAL
+
+const checklist = [
+
+{
+categoria:"Preparación inicial del equipo",
+items:[
+"Encendió correctamente el equipo",
+"Esperó autodiagnóstico completo",
+"Verificó indicadores y alarmas",
+"Identificó entrada automática en pre-calentamiento"
+]
+},
+
+{
+categoria:"Selección del modo de operación",
+items:[
+"Seleccionó el modo adecuado para el caso clínico",
+"Realizó correctamente el cambio de modo",
+"Evitó configuraciones incorrectas"
+]
+},
+
+{
+categoria:"Configuración térmica",
+items:[
+"Configuró temperatura adecuada",
+"Ajustó potencia correctamente",
+"Reconoció necesidad de aumentar/disminuir calor"
+]
+},
+
+{
+categoria:"Manejo del neonato",
+items:[
+"Colocó al neonato correctamente",
+"Colocó sensor de temperatura",
+"Monitorizó respuesta térmica"
+]
+},
+
+{
+categoria:"Seguridad y monitoreo",
+items:[
+"Respondió adecuadamente ante alarmas",
+"Utilizó silencio/reajuste correctamente",
+"Mantuvo vigilancia continua"
+]
+},
+
+{
+categoria:"Funciones complementarias",
+items:[
+"Activó temporizador APGAR",
+"Utilizó temporizador clínico correctamente",
+"Aplicó bloqueo de teclado cuando correspondía"
+]
+}
+
+];
+
+// 🔹 MOSTRAR CHECKLIST
+
+function cargarChecklist(){
+
+let html = "";
+
+checklist.forEach((grupo,gIndex)=>{
+
+html += `
+<div class="categoria">
+${grupo.categoria}
+</div>
+`;
+
+grupo.items.forEach((item,i)=>{
+
+html += `
+
+<div class="item">
+
+<div class="item-texto">
+${item}
+</div>
+
+<div class="estado-opciones">
+
+<label style="color:#16a34a;font-weight:bold;">
+<input type="radio"
+name="item${gIndex}_${i}"
+value="1">
+Correcto
+</label>
+
+<label style="color:#ca8a04;font-weight:bold;">
+<input type="radio"
+name="item${gIndex}_${i}"
+value="0.5">
+Parcialmente correcto
+</label>
+
+<label style="color:#dc2626;font-weight:bold;">
+<input type="radio"
+name="item${gIndex}_${i}"
+value="0">
+Incorrecto
+</label>
+
+</div>
+
+</div>
+`;
+
+});
+
+});
+
+document.getElementById("opciones").innerHTML = html;
+}
+
+// 🔹 FINALIZAR + EVALUACIÓN
+
+function finalizar(){
+
+let totalItems = 0;
+
+let puntaje = 0;
+
+let revision = [];
+
+checklist.forEach((grupo,gIndex)=>{
+
+grupo.items.forEach((item,i)=>{
+
+totalItems++;
+
+let seleccionado =
+document.querySelector(
+`input[name="item${gIndex}_${i}"]:checked`
+);
+
+let estado = "Incorrecto";
+
+let valor = 0;
+
+if(seleccionado){
+
+valor =
+parseFloat(seleccionado.value);
+
+puntaje += valor;
+
+if(valor == 1){
+
+estado = "Correcto";
+}
+
+else if(valor == 0.5){
+
+estado = "Parcialmente correcto";
+}
+
+else{
+
+estado = "Incorrecto";
+}
+}
+
+revision.push({
+
+categoria:
+grupo.categoria,
+
+item:
+item,
+
+estado:
+estado
+
+});
+
+});
+
+});
+
+// =================================================
+// SCORE
+// =================================================
+
+let score =
+Math.round((puntaje/totalItems)*100);
+
+// =================================================
+// FEEDBACK
+// =================================================
+
+let feedback = "";
+
+if(score >= 90){
+
+feedback =
+"Excelente desempeño. Demuestra comprensión profunda del protocolo de termorregulación neonatal y correcta ejecución clínica.";
+}
+
+else if(score >= 70){
+
+feedback =
+"Buen desempeño. Comprende adecuadamente el protocolo clínico, aunque existen aspectos que pueden mejorarse.";
+}
+
+else if(score >= 50){
+
+feedback =
+"Desempeño aceptable, pero requiere mayor práctica en la secuencia y ejecución del protocolo.";
+}
+
+else{
+
+feedback =
+"Se recomienda reforzar el conocimiento y práctica del protocolo clínico antes de continuar.";
+}
+
+// =================================================
+// GUARDAR
+// =================================================
+
+localStorage.setItem(
+"score",
+score
+);
+
+localStorage.setItem(
+"feedback",
+feedback
+);
+
+localStorage.setItem(
+"correctas",
+puntaje.toFixed(1)
+);
+
+localStorage.setItem(
+"total",
+totalItems
+);
+
+localStorage.setItem(
+"revision",
+JSON.stringify(revision)
+);
+
+localStorage.setItem(
+"accionesTecnicas",
+JSON.stringify(accionesTecnicas)
+);
+
+// =================================================
+// RESULTADO
+// =================================================
+
+window.location.href =
+"resultado.html";
+}
+
+// 🔹 CARGAR CHECKLIST
+
+cargarChecklist();
+
+</script>
+
+</body>
+</html>

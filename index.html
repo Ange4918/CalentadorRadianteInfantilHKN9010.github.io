@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Calentador Radiante Neonatal</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3a5f">
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js");
+  }
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #eef4f8, #e6edf3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      width: 100%;
+      background: white;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 24px;
+      font-weight: bold;
+      color: #1e3a5f;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .subtitulo {
+      margin-top: 10px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .contenedor {
+      display: flex;
+      gap: 30px;
+      margin-top: 50px;
+    }
+
+    .card {
+      width: 320px;
+      background: #f8fbff;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 35px rgba(0,0,0,0.12);
+    }
+
+    .icono {
+      width: 90px;
+      height: 90px;
+      margin: auto;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .azul { background: #dbeafe; }
+    .verde { background: #d1fae5; }
+
+    .titulo {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #1e293b;
+    }
+
+    .descripcion {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .etiqueta {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #e0f2fe;
+      color: #0284c7;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .card-verde .etiqueta {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .footer {
+      margin-top: 50px;
+      background: white;
+      padding: 15px 30px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .punto {
+      width: 10px;
+      height: 10px;
+      background: red; /* 🔴 empieza desconectado */
+      border-radius: 50%;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    Simulador de Calentador Radiante Neonatal
+    <div class="subtitulo">
+      Sistema educativo de simulación biomédica
+    </div>
+  </div>
+
+  <!-- TARJETAS -->
+  <div class="contenedor">
+
+    <div class="card" onclick="irGuia()">
+      <div class="etiqueta">Aprendizaje</div>
+      <div class="icono azul">
+        <svg width="42" height="42" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M3 5a2 2 0 012-2h6v18H5a2 2 0 01-2-2z"/>
+          <path d="M13 3h6a2 2 0 012 2v14a2 2 0 01-2 2h-6z"/>
+        </svg>
+      </div>
+      <div class="titulo">Guía Interactiva</div>
+      <div class="descripcion">
+        Explore los controles del panel y conozca su función clínica
+      </div>
+    </div>
+
+    <div class="card card-verde" onclick="irSimulacion()">
+      <div class="etiqueta">Práctica</div>
+      <div class="icono verde">
+        <svg width="42" height="42" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M6 2v6a4 4 0 008 0V2"/>
+          <path d="M6 10a6 6 0 0012 0"/>
+          <circle cx="20" cy="12" r="2"/>
+        </svg>
+      </div>
+      <div class="titulo">Simulación Clínica</div>
+      <div class="descripcion">
+        Practique casos clínicos con protocolos evaluados
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    ⚙️ Estado ESP32:
+    <div class="punto"></div>
+    <span id="estadoTexto">Desconectado</span>
+  </div>
+
+  <!-- 🔥 CONEXIÓN GLOBAL -->
+  <script src="conexion.js"></script>
+
+  <script>
+    conectarESP32();
+
+    function irGuia() {
+      window.location.href = "guia.html";
+    }
+
+    function irSimulacion() {
+      window.location.href = "simulacion.html";
+    }
+
+    // 👉 Opcional: manejar eventos (no necesario aquí)
+    function manejarEvento(data){
+      console.log("Evento recibido en index:", data);
+    }
+
+    // 🔁 mejorar estado visual
+    function actualizarEstado(estado){
+      let punto = document.querySelector(".punto");
+      let texto = document.getElementById("estadoTexto");
+
+      if(estado){
+        punto.style.background = "#22c55e";
+        texto.innerText = "Conectado";
+      } else {
+        punto.style.background = "red";
+        texto.innerText = "Desconectado";
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Guía Interactiva</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #eef3f8;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 25px;
+  background: white;
+  align-items: center;
+}
+
+.titulo {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.volver {
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.estado {
+  color: red;
+}
+
+/* INSTRUCCIÓN */
+.instruccion {
+  text-align: center;
+  padding: 10px;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* CONTENEDOR */
+.main {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* PANEL */
+.panel {
+  width: 50%;
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.panel-box {
+  background: #dde5ee;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.display {
+  background: #1e293b;
+  color: #34d399;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 15px 0;
+}
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+}
+
+.boton {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* INFO */
+.info {
+  width: 50%;
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.card {
+  background: #f1f5f9;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.titulo-info {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.boton.activo {
+  background: #22c55e !important;
+  box-shadow: 0 0 15px rgba(34,197,94,0.7);
+  transform: scale(1.1);
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <span class="volver" onclick="volver()">⬅</span>
+    <span class="titulo">Guía Interactiva del Equipo</span>
+  </div>
+  <div class="estado">🔴 Desconectado</div>
+</div>
+
+<!-- INSTRUCCIÓN -->
+<div class="instruccion">
+Seleccione un control del panel para conocer su función y uso clínico
+</div>
+
+<!-- CONTENIDO -->
+<div class="main">
+
+  <!-- PANEL (NO SE TOCA) -->
+  <div class="panel">
+    <h3>Panel de Control</h3>
+
+    <div class="panel-box">
+
+      <div>CALENTADOR RADIANTE NEONATAL</div>
+
+      <div class="display">
+        <h2>36.8°C</h2>
+        <small>TEMP. ACTUAL</small>
+      </div>
+
+      <div class="botones">
+
+        <div class="boton" onclick="mostrar('precalentamiento')">🔥</div>
+        <div class="boton" onclick="mostrar('manual')">🖐</div>
+        <div class="boton" onclick="mostrar('bebe')">👶</div>
+        <div class="boton" onclick="mostrar('silencio')">🔇</div>
+        <div class="boton" onclick="mostrar('cancelar')">❌</div>
+
+        <div class="boton" onclick="mostrar('aumento')">⬆</div>
+        <div class="boton" onclick="mostrar('disminucion')">⬇</div>
+        <div class="boton" onclick="mostrar('bloqueo')">🔒</div>
+        <div class="boton" onclick="mostrar('apgar')">❤️</div>
+        <div class="boton" onclick="mostrar('timer')">⏱</div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INFO -->
+  <div class="info">
+    <div id="contenido">
+      <h3>Ningún control seleccionado</h3>
+      <p>Haga clic en un botón del panel web o físico para ver su información</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- 🔥 CONEXIÓN ESP32 -->
+<script src="conexion.js"></script>
+
+<script>
+
+// 🔹 INICIAR CONEXIÓN
+conectarESP32();
+
+// 🔹 MODO
+let modo = "guia";
+
+const dataGlobal = {
+
+precalentamiento: {
+titulo: "Modo Pre-calentamiento",
+tecnica: "Modo automático inicial (30 min al 30% de potencia). Prepara la cuna antes de recibir al neonato. Se activa automáticamente al encender.",
+clinico: "Dejar activo si el bebé aún no ha llegado. Salir del modo si el neonato llega en hipotermia (cambiar a manual) o si llega en hipertermia (evitar aporte innecesario de calor)."
+},
+
+manual: {
+titulo: "Modo Manual",
+tecnica: "Control directo de potencia por el operador (0-100%). Sin regulación automática. Ideal para calentamiento rápido en hipotermia severa.",
+clinico: "Activar cuando el bebé llega en hipotermia severa. Ajustar potencia alta (60-100%). Monitorizar respuesta térmica. Cambiar a modo bebé cuando temperatura alcance ~36-36.5°C."
+},
+
+bebe: {
+titulo: "Modo Bebé",
+tecnica: "Control servo automático. El sistema ajusta la potencia para mantener la temperatura objetivo (configurable). Requiere sensor cutáneo correctamente adherido.",
+clinico: "Modo recomendado para mantenimiento térmico y neonatos estables. Colocar sensor en la piel (abdomen o flanco). Configurar temperatura objetivo 36-37°C. El equipo regula automáticamente."
+},
+
+silencio: {
+titulo: "Silencio / Reajuste",
+tecnica: "Silencia temporalmente la alarma audible por 2 minutos. La alarma visual permanece activa. También funciona como botón de reajuste tras resolver una alarma.",
+clinico: "Usar solo después de identificar y atender la causa de la alarma. En hipertermia >38.5°C, el equipo activa alarma automática y detiene calentamiento. Verificar siempre la causa antes de silenciar."
+},
+
+cancelar: {
+titulo: "Cancelar / Calibración",
+tecnica: "Detiene la función actual o cancela una configuración en curso.",
+clinico: "Permite abortar una acción incorrecta o reiniciar el proceso de configuración."
+},
+
+aumento: {
+titulo: "Aumento de temperatura",
+tecnica: "Incrementa la temperatura objetivo o la potencia del calentador, Incrementa la potencia del elemento calefactor radiante en pasos de 10% en modo manual. También aumenta la temperatura objetivo en modo bebé (+0.1°C por pulsación).",
+clinico: "En hipotermia severa (modo manual): aumentar a 60-100% según severidad. En modo bebé: ajustar temperatura objetivo. No exceder 100% por tiempo prolongado para evitar quemaduras."
+},
+
+disminucion: {
+titulo: "Disminución de temperatura",
+tecnica: "Reduce la potencia del elemento calefactor en pasos de 10% en modo manual. Disminuye la temperatura objetivo en modo bebé (-0.1°C por pulsación).",
+clinico: "Aplicar cuando se detecta sobrecalentamiento o al aproximarse al límite superior. En hipertermia, reducir temperatura objetivo a 35-36°C según criterio clínico."
+},
+
+bloqueo: {
+titulo: "Bloqueo del teclado",
+tecnica: "Bloquea todos los controles del panel para evitar cambios accidentales. Mantener presionado 3 segundos para activar/desactivar.",
+clinico: "Activar una vez configurado el equipo y en funcionamiento estable. Previene alteraciones involuntarias durante procedimientos o transporte del neonato."
+},
+
+apgar: {
+titulo: "APGAR",
+tecnica: "Permite registrar tiempos de evaluación (1, 5 y 10 minutos).",
+clinico: "Se usa para evaluar el estado del recién nacido tras el parto."
+},
+
+timer: {
+titulo: "Temporizador",
+tecnica: "Activa un conteo de tiempo programado en el equipo.",
+clinico: "Útil para control de procedimientos, monitoreo o intervenciones clínicas."
+}
+
+};
+
+// ILUMINAR BOTÓN
+function iluminarBoton(tipo){
+
+  // 🔹 apagar todos
+  document.querySelectorAll(".boton").forEach(b=>{
+    b.classList.remove("activo");
+  });
+
+  // 🔹 encender el correcto
+  let btn = document.querySelector(`[onclick="mostrar('${tipo}')"]`);
+
+  if(btn){
+    btn.classList.add("activo");
+  }
+}
+
+// 🔙 VOLVER
+function volver(){
+  window.location.href = "index.html";
+}
+
+// 🔥 FUNCIÓN ORIGINAL (NO TOCADA)
+function mostrar(tipo){
+
+    iluminarBoton(tipo);
+
+    // =============================================
+    // EVENTOS ESP32
+    // =============================================
+
+if(tipo === "precalentamiento"){
+
+  enviarEvento("MODE:PREWARM");
+}
+
+    if(tipo === "manual"){
+
+      enviarEvento("MODE:MANUAL");
+    }
+
+    if(tipo === "bebe"){
+
+      enviarEvento("MODE:BABY");
+    }
+
+    if(tipo === "aumento"){
+
+      enviarEvento("POWER:UP");
+    }
+
+    if(tipo === "disminucion"){
+
+      enviarEvento("POWER:DOWN");
+    }
+
+let contenido = document.getElementById("contenido");
+
+
+let info = dataGlobal[tipo];
+
+contenido.innerHTML = `
+<h3>${info.titulo}</h3>
+
+<div class="card">
+<b>Función técnica:</b><br><br>
+${info.tecnica}
+</div>
+
+<div class="card" style="border:2px solid #34d399;">
+<b>Uso clínico:</b><br><br>
+${info.clinico}
+</div>
+`;
+}
+
+function mostrarLocal(tipo){
+
+  iluminarBoton(tipo);
+
+  let contenido =
+  document.getElementById("contenido");
+
+  let info = dataGlobal[tipo];
+
+  contenido.innerHTML = `
+  <h3>${info.titulo}</h3>
+
+  <div class="card">
+  <b>Función técnica:</b><br><br>
+  ${info.tecnica}
+  </div>
+
+  <div class="card"
+  style="border:2px solid #34d399;">
+  <b>Uso clínico:</b><br><br>
+  ${info.clinico}
+  </div>
+  `;
+}
+
+// 🔥 EVENTOS DESDE ESP32
+function manejarEvento(data){
+
+  if(modo !== "guia") return;
+
+  console.log("ESP32:", data);
+
+  // =============================================
+  // MODOS
+  // =============================================
+
+  if(data === "precalentamiento"){
+
+    mostrarLocal("precalentamiento");
+  }
+
+  if(data === "manual"){
+
+    mostrarLocal("manual");
+  }
+
+  if(data === "bebe"){
+
+    mostrarLocal("bebe");
+  }
+
+  // =============================================
+  // CONTROL
+  // =============================================
+
+  if(data === "aumento"){
+
+    mostrarLocal("aumento");
+  }
+
+  if(data === "disminucion"){
+
+    mostrarLocal("disminucion");
+  }
+
+  if(data === "bloqueo"){
+
+    mostrarLocal("bloqueo");
+  }
+
+  if(data === "cancelar"){
+
+    mostrarLocal("cancelar");
+  }
+
+  if(data === "silencio"){
+
+    mostrarLocal("silencio");
+  }
+
+  if(data === "apgar"){
+
+    mostrarLocal("apgar");
+  }
+
+  if(data === "timer"){
+
+    mostrarLocal("timer");
+  }
+}
+
+// 🔥 ESTADO VISUAL
+function actualizarEstado(estado){
+  let estadoDiv = document.querySelector(".estado");
+
+  if(!estadoDiv) return;
+
+  if(estado){
+    estadoDiv.innerHTML = "🟢 Conectado";
+  } else {
+    estadoDiv.innerHTML = "🔴 Desconectado";
+  }
+}
+
+</script>
+
+</body>
+</html>

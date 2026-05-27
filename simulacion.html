@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Simulación Clínica</title>
+
+<style>
+
+body{
+font-family: Arial;
+margin:0;
+background:#eef3f8;
+}
+
+/* HEADER */
+
+.header{
+display:flex;
+justify-content:space-between;
+padding:15px 25px;
+background:white;
+}
+
+.volver{
+cursor:pointer;
+}
+
+.estado-conexion{
+color:red;
+}
+
+/* CONTENIDO */
+
+.container{
+padding:20px;
+}
+
+/* CASOS */
+
+.casos{
+display:flex;
+gap:20px;
+}
+
+.caso{
+flex:1;
+background:white;
+padding:15px;
+border-radius:15px;
+cursor:pointer;
+border:2px solid transparent;
+}
+
+.caso.activo{
+border:2px solid #14b8a6;
+background:#e6fffa;
+}
+
+/* PROTOCOLO */
+
+.protocolo{
+margin-top:20px;
+background:#e0f2fe;
+padding:20px;
+border-radius:15px;
+}
+
+/* SLIDER */
+
+.slider{
+margin-top:20px;
+}
+
+/* BOTON */
+
+.boton{
+margin-top:20px;
+width:100%;
+padding:15px;
+background:#14b8a6;
+color:white;
+border:none;
+border-radius:10px;
+font-size:18px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+
+<div>
+<span class="volver" onclick="volver()">⬅</span>
+<b>Simulación Clínica</b>
+</div>
+
+<div
+class="estado-conexion"
+id="estadoConexion">
+
+🔴 Desconectado
+
+</div>
+
+</div>
+
+<div class="container">
+
+<h3>Configuración del Caso</h3>
+
+<!-- CASOS -->
+
+<div class="casos">
+
+<!-- CASO 1 -->
+
+<div class="caso"
+onclick="seleccionarCaso(1, this)">
+
+<div style="display:flex; justify-content:space-between;">
+
+<b>Caso 1</b>
+
+<span style="background:#fecaca; padding:3px 8px; border-radius:10px;">
+
+Alto
+
+</span>
+
+</div>
+
+<p>
+
+Neonato que llega en hipotermia severa.
+Requiere calentamiento rápido y controlado.
+
+</p>
+
+</div>
+
+<!-- CASO 2 -->
+
+<div class="caso"
+onclick="seleccionarCaso(2, this)">
+
+<div style="display:flex; justify-content:space-between;">
+
+<b>Caso 2</b>
+
+<span style="background:#bbf7d0; padding:3px 8px; border-radius:10px;">
+
+Bajo
+
+</span>
+
+</div>
+
+<p>
+
+Neonato con temperatura normal.
+Objetivo: mantener termorregulación estable.
+
+</p>
+
+</div>
+
+<!-- CASO 3 -->
+
+<div class="caso"
+onclick="seleccionarCaso(3, this)">
+
+<div style="display:flex; justify-content:space-between;">
+
+<b>Caso 3</b>
+
+<span style="background:#fde68a; padding:3px 8px; border-radius:10px;">
+
+Medio
+
+</span>
+
+</div>
+
+<p>
+
+Neonato con temperatura elevada.
+Requiere enfriamiento controlado.
+
+</p>
+
+</div>
+
+</div>
+
+<!-- PROTOCOLO -->
+
+<div class="protocolo" id="protocolo">
+
+Seleccione un caso para ver el protocolo
+
+</div>
+
+<!-- TIEMPO -->
+
+<div class="slider">
+
+<label>
+
+Tiempo:
+<span id="tiempoValor">20</span> min
+
+</label>
+
+<br>
+
+<input
+type="range"
+min="0"
+max="60"
+value="20"
+oninput="actualizarTiempo(this.value)">
+
+</div>
+
+<!-- TEMPERATURA -->
+
+<div class="slider">
+
+<label>
+
+Temperatura de piel:
+<span id="tempValor">36.5</span> °C
+
+</label>
+
+<br>
+
+<input
+id="tempSlider"
+type="range"
+min="32"
+max="38"
+step="0.1"
+value="36.5"
+oninput="actualizarTemp(this.value)">
+
+</div>
+
+<!-- BOTON -->
+
+<button
+class="boton"
+onclick="iniciarCaso()">
+
+▶ Iniciar Caso Clínico
+
+</button>
+
+</div>
+
+<!-- ================================================= -->
+<!-- CONEXION -->
+<!-- ================================================= -->
+
+<script src="conexion.js"></script>
+
+<script>
+
+// =====================================================
+// CONEXION ESP32
+// =====================================================
+
+conectarESP32();
+
+// =====================================================
+// ESTADO CONEXION
+// =====================================================
+
+function actualizarEstado(estado){
+
+let el =
+document.getElementById("estadoConexion");
+
+if(!el) return;
+
+if(estado){
+
+el.innerHTML =
+"🟢 Conectado";
+
+el.style.color = "green";
+}
+
+else{
+
+el.innerHTML =
+"🔴 Desconectado";
+
+el.style.color = "red";
+}
+}
+
+// =====================================================
+// EVENTOS ESP32
+// =====================================================
+
+function manejarEvento(data){
+
+console.log("ESP32:",data);
+}
+
+// =====================================================
+// VARIABLES
+// =====================================================
+
+let casoSeleccionado = 0;
+
+let tiempo = 20;
+
+let temperatura = 36.5;
+
+// =====================================================
+// VOLVER
+// =====================================================
+
+function volver(){
+
+window.location.href =
+"index.html";
+}
+
+// =====================================================
+// TIEMPO
+// =====================================================
+
+function actualizarTiempo(valor){
+
+tiempo = valor;
+
+document.getElementById("tiempoValor")
+.innerText = valor;
+}
+
+// =====================================================
+// TEMPERATURA
+// =====================================================
+
+function actualizarTemp(valor){
+
+temperatura = valor;
+
+document.getElementById("tempValor")
+.innerText = valor;
+}
+
+// =====================================================
+// CASOS
+// =====================================================
+
+function seleccionarCaso(caso){
+
+casoSeleccionado = caso;
+
+document
+.querySelectorAll(".caso")
+.forEach(c => c.classList.remove("activo"));
+
+event.currentTarget
+.classList.add("activo");
+
+let texto = "";
+
+// =================================================
+// CASO 1
+// =================================================
+
+if(caso==1){
+
+texto = `
+
+<b>Protocolo: Hipotermia Severa</b><br><br>
+
+1. Encender interruptor principal<br>
+2. Esperar autodiagnóstico (~5 segundos) y beep largo<br>
+3. Sistema entra en pre-calentamiento automático (30% potencia)<br>
+4. Cambiar a modo MANUAL (bebé en hipotermia presente)<br>
+5. Ajustar potencia alta (60-100% según severidad)<br>
+6. Colocar al bebé en la cuna<br>
+7. Monitorizar respuesta térmica del neonato<br>
+8. Colocar sensor de temperatura en la piel<br>
+9. Cuando temperatura ≈36-36.5°C, cambiar a modo BEBÉ<br>
+10. El equipo regula automáticamente la potencia<br>
+11. Activar temporizador APGAR si se requiere (1, 5 y 10 min)
+
+`;
+
+document.getElementById("tempSlider").min = 32;
+
+document.getElementById("tempSlider").max = 36.4;
+
+document.getElementById("tempSlider").value = 34;
+
+actualizarTemp(34);
+}
+
+// =================================================
+// CASO 2
+// =================================================
+
+if(caso==2){
+
+texto = `
+
+<b>Protocolo: Normotermia</b><br><br>
+
+1. Encender interruptor principal<br>
+2. Esperar autodiagnóstico (~5 segundos) y beep largo<br>
+3. Sistema entra en pre-calentamiento automático (30% potencia)<br>
+4. Seleccionar modo BEBÉ<br>
+5. Configurar temperatura deseada (36-37°C)<br>
+6. Colocar al bebé en la cuna<br>
+7. Colocar sensor de temperatura en la piel del neonato<br>
+8. El sistema regula automáticamente según temperatura del bebé<br>
+9. Activar temporizador APGAR (1, 5 y 10 min)
+
+`;
+
+document.getElementById("tempSlider").min = 36.5;
+
+document.getElementById("tempSlider").max = 37.5;
+
+document.getElementById("tempSlider").value = 36.8;
+
+actualizarTemp(36.8);
+}
+
+// =================================================
+// CASO 3
+// =================================================
+
+if(caso==3){
+
+texto = `
+
+<b>Protocolo: Hipertermia</b><br><br>
+
+1. Encender interruptor principal<br>
+2. Esperar autodiagnóstico (~5 segundos) y beep largo<br>
+3. Sistema entra en pre-calentamiento automático (30% potencia)<br>
+4. Cambiar a modo BEBÉ (bebé en hipotermia presente)<br>
+5. Colocar al bebé en la cuna<br>
+6. Colocar sensor de temperatura en la piel<br>
+7. Configurar temperatura objetivo menor (35-36°C según criterio)<br>
+8. El equipo disminuye/corta potencia automáticamente<br>
+9. Monitorizar continuamente temperatura del neonato<br>
+10. El equipo regula automáticamente la potencia<br>
+11. Si temp >38.5°C, equipo activa alarma y detiene calentamiento
+
+`;
+
+document.getElementById("tempSlider").min = 37.6;
+
+document.getElementById("tempSlider").max = 40;
+
+document.getElementById("tempSlider").value = 38;
+
+actualizarTemp(38);
+}
+
+document.getElementById("protocolo")
+.innerHTML = texto;
+}
+
+// =====================================================
+// INICIAR CASO
+// =====================================================
+
+function iniciarCaso(){
+
+if(casoSeleccionado==0){
+
+alert("Seleccione un caso");
+
+return;
+}
+
+// GUARDAR CONFIGURACION
+
+localStorage.setItem(
+"caso",
+casoSeleccionado
+);
+
+localStorage.setItem(
+"tiempo",
+tiempo
+);
+
+localStorage.setItem(
+"temperatura",
+temperatura
+);
+
+// IR A SIMULACION
+
+window.location.href =
+"caso.html";
+}
+
+</script>
+
+</body>
+</html>
