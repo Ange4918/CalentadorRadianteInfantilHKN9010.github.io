@@ -239,6 +239,9 @@ JSON.parse(
 localStorage.getItem("accionesTecnicas")
 ) || [];
 
+let caso =
+parseInt(localStorage.getItem("caso"));
+
 let tecnicoHTML = "";
 
 function agregarTecnico(texto,estado){
@@ -275,103 +278,133 @@ ${texto}
 // ANALISIS
 // =================================================
 
-// MANUAL
+// =================================================
+// ANALISIS SEGUN CASO
+// =================================================
 
-if(acciones.includes("manual")){
+if(caso == 1){
 
-agregarTecnico(
-"✔ Cambio a modo MANUAL detectado",
-"ok"
-);
+    // HIPOTERMIA
+
+    if(acciones.includes("manual")){
+
+        agregarTecnico(
+        "✔ Utilizó modo MANUAL",
+        "ok");
+
+    }else{
+
+        agregarTecnico(
+        "✖ Debía utilizar modo MANUAL",
+        "bad");
+    }
+
+    if(acciones.includes("aumento")){
+
+        agregarTecnico(
+        "✔ Aumentó la potencia térmica",
+        "ok");
+
+    }else{
+
+        agregarTecnico(
+        "✖ Debía aumentar la potencia",
+        "bad");
+    }
+
+    if(acciones.includes("bebe")){
+
+        agregarTecnico(
+        "✔ Cambió posteriormente a modo BEBÉ",
+        "ok");
+    }
+
+    if(acciones.includes("apgar")){
+
+        agregarTecnico(
+        "✔ Utilizó temporizador APGAR",
+        "ok");
+    }
+
 }
 
-else{
+else if(caso == 2){
 
-agregarTecnico(
-"✖ Nunca se utilizó modo MANUAL",
-"bad"
-);
+    // NORMOTERMIA
+
+    if(acciones.includes("bebe")){
+
+        agregarTecnico(
+        "✔ Utilizó modo BEBÉ",
+        "ok");
+
+    }else{
+
+        agregarTecnico(
+        "✖ Debía utilizar modo BEBÉ",
+        "bad");
+    }
+
+    if(acciones.includes("manual")){
+
+        agregarTecnico(
+        "✖ No era necesario utilizar modo MANUAL",
+        "bad");
+    }
+
+    if(acciones.includes("aumento")){
+
+        agregarTecnico(
+        "✖ No era necesario aumentar potencia",
+        "bad");
+    }
+
+    if(acciones.includes("apgar")){
+
+        agregarTecnico(
+        "✔ Utilizó temporizador APGAR",
+        "ok");
+    }
+
 }
 
-// AJUSTES
+else if(caso == 3){
 
-if(
-acciones.includes("aumento") ||
-acciones.includes("disminucion")
-){
+    // HIPERTERMIA
 
-agregarTecnico(
-"✔ Ajuste de potencia detectado",
-"ok"
-);
-}
+    if(acciones.includes("bebe")){
 
-else{
+        agregarTecnico(
+        "✔ Utilizó modo BEBÉ",
+        "ok");
 
-agregarTecnico(
-"✖ No se realizaron ajustes térmicos",
-"bad"
-);
-}
+    }else{
 
-// MODO BEBE
+        agregarTecnico(
+        "✖ Debía utilizar modo BEBÉ",
+        "bad");
+    }
 
-if(acciones.includes("bebe")){
+    if(acciones.includes("disminucion")){
 
-agregarTecnico(
-"✔ Cambio a modo BEBÉ detectado",
-"ok"
-);
-}
+        agregarTecnico(
+        "✔ Disminuyó la potencia térmica",
+        "ok");
 
-// APGAR
+    }else{
 
-if(acciones.includes("apgar")){
+        agregarTecnico(
+        "✖ Debía disminuir la potencia",
+        "bad");
+    }
 
-agregarTecnico(
-"✔ Temporizador APGAR utilizado",
-"ok"
-);
-}
+    if(acciones.includes("aumento")){
 
-// TIMER
+        agregarTecnico(
+        "✖ El aumento de potencia fue incorrecto",
+        "bad");
+    }
 
-if(acciones.includes("timer")){
-
-agregarTecnico(
-"✔ Temporizador clínico utilizado",
-"ok"
-);
-}
-
-// BLOQUEO
-
-if(acciones.includes("bloqueo")){
-
-agregarTecnico(
-"✔ Bloqueo de teclado utilizado",
-"ok"
-);
-}
-
-// SILENCIO
-
-if(acciones.includes("silencio")){
-
-agregarTecnico(
-"✔ Función silencio utilizada",
-"ok"
-);
-}
-
-// CANCELAR
-
-if(acciones.includes("cancelar")){
-
-agregarTecnico(
-"✔ Cancelación de proceso detectada",
-"warn"
-);
 }
 
 document.getElementById("tecnico").innerHTML =
